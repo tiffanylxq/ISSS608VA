@@ -1,0 +1,49 @@
+---
+title: "Take-Home Exercise 1"
+description: |
+  First try out in TH.
+author:
+  - name: Lee Xiao Qi 
+    url: https://example.com/norajones
+    affiliation: School of Computing and Information Systems (SMU)
+    affiliation_url: https://example.com/spacelysprokets
+date: "`r Sys.Date()`"
+output: distill::distill_article
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Overview
+
+In this exercise.
+
+# Getting Started
+```{r}
+packages = c('tidyverse')
+
+for(p in packages){
+  if(!require(p, character.only =T)){
+    install.packages(p)
+    }
+  library(p, character.only =T)
+}
+```
+
+# Importing Data
+The code chuck below import *Exam_data.csv* from the data folder into R by using [`read_csv()`](www.test.com) and save it as an tibble data frame called *exam_data*. 
+
+```{r}
+exam_data <- read_csv("data/Exam_data.csv")
+```
+
+```{r}
+
+```
+
+# A Simple Bar Chart 
+
+
+
+
