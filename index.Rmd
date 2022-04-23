@@ -1,7 +1,13 @@
 ---
-title: "Visual Analytics"
+title: "Xiao Qi's Visual Analytics Site for ISSS608"
 description: |
-  Welcome to the website. I hope you enjoy it!
+
+  Welcome to my website where I compile all the take home exercises and dataviz makeover assignments for ISSS608 Visual Analytics and   Applications under SMU MITB program, by Prof Kam Tin Seong.
+  
+  Feel free to reach out to me at xiaoqilee.2020@mitb.smu.edu.sg should you have any feedback or need any clarification.
+  
+  Enjoy & Stay Safe!
+  
 site: distill::distill_website
 ---
 
@@ -15,3 +21,4 @@ knitr::opts_chunk$set(echo = FALSE)
 # https://rstudio.github.io/distill/website.html
 
 ```
+

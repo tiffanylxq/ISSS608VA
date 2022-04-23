@@ -1,0 +1,55 @@
+---
+title: "In Class Ex 02"
+description: |
+
+  we have just tried tableau, lets do a similar one on R!
+  
+author:
+  - name: XiaoQi
+    affiliation: School of Computing and Information Systems (SMU)
+date: "`r Sys.Date()`"
+output: distill::distill_article
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE,
+                      eval = TRUE,
+                      warning = FALSE,
+                      message = FALSE)
+```
+
+# Overview
+
+In this exercise.
+
+# Getting Started
+```{r echo=FALSE}
+packages = c('tidyverse')
+
+for(p in packages){
+  if(!require(p, character.only =T)){
+    install.packages(p)
+    }
+  library(p, character.only =T)
+}
+```
+
+# Importing Data
+The code chuck below import *Exam_data.csv* from the data folder into R by using [`read_csv()`](www.test.com) of [**readr**](www.test1.com) package and save it as an tibble data frame called *exam_data*. 
+
+```{r}
+exam_data <- read_csv("data/Exam_data.csv")
+```
+
+# A Simple Bar Chart 
+The code chuck below uses create a bar chart by using geom_bar of ggplot2.
+
+```{r}
+
+ggplot(data=exam_data, 
+    aes(x= RACE)) +
+  geom_bar()
+```
+
+
+

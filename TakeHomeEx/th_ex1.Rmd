@@ -1,7 +1,9 @@
 ---
 title: "Take-Home Exercise 1"
 description: |
-  First try out in TH.
+
+  Deploying skills from in Lesson 1 and Hands-on Exercise 1 
+
 author:
   - name: Lee Xiao Qi 
     url: https://example.com/norajones
@@ -12,16 +14,28 @@ output: distill::distill_article
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(echo = TRUE,
+                      eval = TRUE,
+                      warning = FALSE,
+                      message = FALSE)
 ```
 
-# Overview
+# The Task
 
-In this exercise.
+In this take-home exercise, we used appropriate static statistical graphics methods to reveal the demographic of the city of    Engagement, Ohio USA. Demographic is the statistical characteristics of a given population such as age, gender, ethnicity, income, level of education, religion, occupation, family structure etc.
 
-# Getting Started
+The dataset used is based on [VAST Challenge 2022](https://vast-challenge.github.io/2022/) and will be processed using appropriate **tidyverse** family of packages and the statistical graphics using **ggplot2** and its extensions.
+
+# Exploration of Data
+
+### Importing the relevant packages
+
+The packages required are **tidyverse** (including **dplyr**, **magrittr**, **ggplot2**), **skimr**, **ggrepel** will be used for the purpose of this exercise:
+
+The code chunk below is used to install and load the required packages onto RStudio.
+
 ```{r}
-packages = c('tidyverse')
+packages = c('tidyverse','skimr','ggrepel')
 
 for(p in packages){
   if(!require(p, character.only =T)){
@@ -31,19 +45,201 @@ for(p in packages){
 }
 ```
 
-# Importing Data
-The code chuck below import *Exam_data.csv* from the data folder into R by using [`read_csv()`](www.test.com) and save it as an tibble data frame called *exam_data*. 
+### Importing Data
+There are a total of 3 dataset folders (**Activity Logs, Attributes, Journals**) from the VAST Challenge 2022. We will use the dataset *Participants* from the *Attributes* folder which is most relevant to requirement of this exercise. 
+
+The code chuck below import *Participants.csv* from the data folder into R by using `read_csv()` and save it as an tibble data frame called *demographic_data*. 
+
+
 
 ```{r}
-exam_data <- read_csv("data/Exam_data.csv")
+demographic_data <- read_csv("data/Participants.csv")
+```
+
+# Data Exploration and Wrangling
+First, let’s just get a general sense of our data.
+
+
+```{r}
+library(dplyr)
+demographic_data %>%
+  glimpse()
+```
+We see that there are a total of **1011 participants (rows)** with **7 attributes (columns)** describing these participants.
+
+Some attributes that we would think of as categorical data (eg. *educationLevel*) are currently of class character as indicated by the `<chr>` just to the right of the column names in the `glimpse()` output. This means that the variable values are character strings, such as words or phrases.
+
+Some attributes are of class `<dbl>`, which stands for double precision which indicates that they are numeric and that they have decimal values. We would have prefer some of the attributes eg. *householdSize* to be integer values which would not allow for decimal numbers. 
+
+Lastly, there is a attribute of class `<lgl>`, which stands for logical which indicates a boolean value of true or false. Instead of a true/false data, we would prefer to have a class <chr>  for yes/no to the attributes of whether the participants have kids for an easier understanding of the data. We therefore add a new column for this data using the function `mutate()` and `case_when()` with the code below:
+
+
+```{r}
+demographic_data<-demographic_data %>%
+  mutate(AnyKids = case_when(haveKids==TRUE ~ "Yes", haveKids==FALSE ~ "No"))
+
+```
+
+There is another common data class, factor, which is abbreviated as `<fct>`. A factor is something that has unique levels but there is no appreciable order to the levels. For example, here *participantId* has numeric value when it is just an id that we want to be interpreted as just a unique level and not as the number.  
+
+Hence, we will convert *participantId* into factors by using the `across()` function of the `dplyr` package and the `as.factor()` base function. The `across()` function has two main arguments: (i) the columns we want to operate on and (ii) the function or list of functions to apply to each column.
+
+```{r}
+
+library(magrittr)
+demographic_data <-demographic_data %>%
+  mutate(across(c(participantId), as.factor)) 
+
+#let's confirm the change
+glimpse(demographic_data)
+```
+We can see that *participantId* is now factor as indicated by <fct> after the attribute name.
+
+### Summary Statistics
+
+The `skim()` function of the **skimr** package is also  helpful for getting a general sense of our data. By design, it provides summary statistics about the attributes in the dataset.
+
+
+```{r}
+library(skimr)
+skim(demographic_data)
+```
+The function provides separate tables of summary statistics for each data type: factor, numeric and logical.
+There is column called `n_missing` for the number of values that are missing. We confirm that there are no missing data in our dataset.
+
+# Visualizing with Charts
+
+### Age
+
+First, we prepare a simple histogram (default setting) to see the age distribution of our participants. 
+
+```{r}
+library(ggplot2)
+ggplot(data=demographic_data, aes(x = age)) +
+  geom_histogram()  
+```
+Note that the histogram lacks some degree of **clarity** (eg. no title) and **aesthetic** (eg. no distinction between each bar, bin size default at 30). Hence, the following was added to the code:
+
+1. use the *bins* argument to change the number of bins to 20
+2. use *fill* argument is to shade the histogram with light blue color
+3. use *geom_vline* to add a mean line of 39.07 as per summary statistics
+3. use *color* argument is to change the outline colour of the bars in black 
+4. use *ggtitle* to add labels to the chart
+
+```{r}
+ggplot(data=demographic_data, aes(x = age)) +
+  geom_histogram(bins=20,color="black",fill="light blue")+
+  geom_vline(aes(xintercept=mean(age,na.rm=T)),color="red",linetype="dashed",size=1)+
+  xlab("Age") + 
+  ylab("No. of Participants")+
+  ggtitle(label = 'Population Across Age Group',
+          subtitle = 'The 1011 participants are grouped in 20 bins according to their age.')+
+    theme(plot.title = element_text(size=14, face="bold",hjust = 0.5),
+          plot.subtitle = element_text(hjust = 0.5))
+
+```
+The population is considerably young, with a range from 18 to 60 years and with a mean age of 39 years old. 
+
+### Household Size
+```{r}
+ggplot(data=demographic_data, aes(x = householdSize)) +
+  geom_bar(color="black",fill="light blue") + 
+  geom_text(stat="count",aes(label=paste0(..count..,", ",round(..count../sum(..count..)*100,1),"%")),vjust=-1) +
+  ylim(0,400) +
+  xlab("Age") + 
+  ylab("No. of Participants")+
+  ggtitle(label = 'Population Across Age Group',
+          subtitle = 'The 1011 participants are grouped in 20 bins according to their age.')+
+    theme(plot.title = element_text(size=14, face="bold",hjust = 0.5),
+          plot.subtitle = element_text(hjust = 0.5))
+
+```
+```{r}
+ggplot(data=demographic_data, aes(x = householdSize)) +
+  geom_bar(color="black",fill="light blue") + 
+  geom_text(stat="count",aes(label=paste0(..count..,", ",round(..count../sum(..count..)*100,1),"%")),vjust=-1) +
+  ylim(0,400) +
+  xlab("Age") + 
+  ylab("No. of Participants")+
+  ggtitle(label = 'Population Across Age Group',
+          subtitle = 'The 1011 participants are grouped in 20 bins according to their age.')+
+    theme(plot.title = element_text(size=14, face="bold",hjust = 0.5),
+          plot.subtitle = element_text(hjust = 0.5))
+
+```
+
+### Education Level
+
+We will use `factor()` to specify the factor level order from lowest to the highest education level for a more intuitive interpretation of the chart. 
+
+```{r}
+demographic_data$educationLevel = factor(demographic_data$educationLevel, levels = c('Low', 'HighSchoolOrCollege', 'Bachelors','Graduate'))
+
+ggplot(data=demographic_data,aes(educationLevel)) +
+  geom_bar(color="black",fill="light blue") + 
+  geom_text(stat="count",aes(label=paste0(..count..,", ",round(..count../sum(..count..)*100,1),"%")),vjust=-1) +
+  ylim (0, 600) +
+  xlab("Education Level") + 
+  ylab("No. of Participants") +
+    ggtitle(label = 'Education Level of Participants',
+          subtitle = 'The participants are grouped according to their education level.')+
+    theme(plot.title = element_text(size=14, face="bold",hjust = 0.5),
+          plot.subtitle = element_text(hjust = 0.5))
+```
+We see that more than 50% of the participants is a high school or college graduate, with about 40% of them holding a min. bachelors degree. 
+
+It is commonly viewed that higher educated females tends to have lesser kids. While we do not have the gender of these participants, the assumption is that married couple are usually of similar educational background and hence viewed as an unit i.e. higher educated parents tends to have lesser kids. 
+
+With this in mind, we layered the *AnyKids* attributes onto each education level category.
+
+```{r}
+
+ggplot(data=demographic_data,aes(x=educationLevel, fill=AnyKids)) +
+  geom_bar(color="black", position = "dodge") + 
+  ylim (0, 600) +
+  xlab("Education Level") + 
+  ylab("No. of Participants") +
+    ggtitle(label = 'Proportion of Participants with Kids for Each Education Category',
+          subtitle = 'The participants are grouped according to their education level and if they have any kids.')+
+    theme(plot.title = element_text(size=14, face="bold",hjust = 0.5),
+          plot.subtitle = element_text(hjust = 0.5))
+
+```
+When we stacked the bars side by side using `position = "dodge"` within each category, it is apparently that parents of lower educational background do have more kids (i.e. almost half of them have kids) compared to those of higher educational background where only about one-third of them have kids. 
+
+
+
+```{r}
+
 ```
 
 ```{r}
 
 ```
 
-# A Simple Bar Chart 
+
+```{r}
+
+```
 
 
+```{r}
+
+```
+
+
+```{r}
+
+```
+
+
+```{r}
+
+```
+
+
+```{r}
+
+```
 
 
