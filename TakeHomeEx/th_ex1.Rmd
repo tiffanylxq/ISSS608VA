@@ -206,7 +206,7 @@ ggplot(data=demographic_data,aes(x=educationLevel, fill=AnyKids)) +
 
 ```
 When we stacked the bars side by side using `position = "dodge"` within each category, it is apparently that parents of lower educational background do have more kids (i.e. almost half of them have kids) compared to those of higher educational background where only about one-third of them have kids. 
-
+eee
 
 
 ```{r}
