@@ -20,19 +20,19 @@ knitr::opts_chunk$set(echo = TRUE,
                       message = FALSE)
 ```
 
-# The Task
+# 1. The Task
 
-In this take-home exercise, we used appropriate static statistical graphics methods to reveal the demographic of the city of    Engagement, Ohio USA from the [VAST Challenge 2022](https://vast-challenge.github.io/2022/). Demographic is the statistical characteristics of a given population such as age, gender, ethnicity, income, level of education, religion, occupation, family structure etc.
+In this take-home exercise, we will use appropriate statistical graphics methods to reveal the demographic of the city of    Engagement, Ohio USA from the [VAST Challenge 2022](https://vast-challenge.github.io/2022/). 
 
-About 1000 representative residents has volunteered to provide data using the city’s urban planning app, which records the places they visit, their spending, and their purchases, among other things. 
+Demographic is the statistical characteristics of a given population such as age, gender, ethnicity, income, level of education, religion, occupation, family structure etc.
 
 In this exercise, the data will be processed using appropriate **tidyverse** family of packages and the statistical graphics using **ggplot2** and its extensions.
 
-# Exploration of Data
+# 2. Exploration of Data
 
-### Importing the relevant packages
+### 2.1 Importing the relevant packages
 
-The packages required are **tidyverse** (including **dplyr**, **magrittr**, **ggplot2**, **patchwork**), **skimr**, **ggrepel** will be used for the purpose of this exercise:
+The packages **tidyverse** (including **dplyr**, **magrittr**, **ggplot2**, **patchwork**), **skimr**, **ggrepel** will be used for the purpose of this exercise:
 
 The code chunk below is used to install and load the required packages onto RStudio.
 
@@ -47,34 +47,36 @@ for(p in packages){
 }
 ```
 
-### Importing Data
-There are a total of 3 dataset folders (**Activity Logs, Attributes, Journals**) from the VAST Challenge 2022. We will only be using the dataset *Participants* from the *Attributes* folder for this exercise. 
+### 2.2 Importing Data
+
+About 1000 representative residents have volunteered to provide data using the city’s urban planning app, which records the places they visit, their spending, and their purchases, among other things; totaling to 3 dataset folders (**Activity Logs, Attributes, Journals**). We will only be using the dataset **Participants** from the **Attributes** folder for this exercise. 
 
 The code chuck below import *Participants.csv* from the data folder into R by using `read_csv()` and save it as an tibble data frame called *demographic_data*. 
-
-
 
 ```{r}
 demographic_data <- read_csv("data/Participants.csv")
 ```
 
-# Data Exploration and Wrangling
-First, let’s just get a general sense of our data using the function `glimpse()` from the library `dplyr`.
+# 3. Data Exploration and Wrangling
 
+First, let’s get a general sense of our data using the function `glimpse()` from the library `dplyr`.
+
+### 3.1 Quick Overview
 
 ```{r}
 library(dplyr)
 demographic_data %>%
   glimpse()
 ```
-We see that there are a total of **1011 participants (rows)** with **7 attributes (columns)** describing these participants.
+We see that there are a total of **1011 participants (rows)** with **7 attributes (columns)**.
 
 Some attributes that we would think of as categorical data (eg. *educationLevel*) are currently of class character as indicated by the `<chr>` just to the right of the column names in the `glimpse()` output. This means that the variable values are character strings, such as words or phrases.
 
 Some attributes are of class `<dbl>`, which stands for double precision which indicates that they are numeric and that they have decimal values. We would have prefer some of the attributes eg. *householdSize* to be integer values which would not allow for decimal numbers. 
 
-Lastly, there is a attribute of class `<lgl>`, which stands for logical which indicates a boolean value of true or false. Instead of a true/false data, we would prefer to have a class <chr>  for yes/no to the attributes of whether the participants have kids for an easier reading of the charts in our subsequent exercise. We therefore add a new column for this data using the function `mutate()` and `case_when()` with the code below:
+### 3.2 Some Data Cleaning 
 
+Lastly, there is a attribute of class `<lgl>`, which stands for logical which indicates a boolean value of true or false. Instead of a true/false data, we would prefer to have a data value of yes/no to whether the participants have kids for an easier reading of the charts in our subsequent exercise. Therefore, a new column (*AnyKids*) is added using the function `mutate()` and `case_when()` with the code below:
 
 ```{r}
 demographic_data<-demographic_data %>%
@@ -82,7 +84,7 @@ demographic_data<-demographic_data %>%
 
 ```
 
-There is another common data class, factor, which is abbreviated as `<fct>`. A factor is something that has unique levels but there is no appreciable order to the levels. For example, here *participantId* has numeric value when it is just an id for each participant; we want to be interpreted as just a unique level and not as the number.  
+There is another common data class, factor, which is abbreviated as `<fct>`. A factor is something that has unique levels but there is no appreciable order to the levels. For example, here *participantId* has numeric value when it is just an id for each participant; we want it to be interpreted as just a unique level and not as the number.  
 
 Hence, we will convert *participantId* into factors by using the `across()` function of the `dplyr` package and the `as.factor()` base function. The `across()` function has two main arguments: (i) the columns we want to operate on and (ii) the function or list of functions to apply to each column.
 
@@ -97,7 +99,7 @@ glimpse(demographic_data)
 ```
 We can see that *participantId* is now factor as indicated by <fct> after the attribute name.
 
-### Summary Statistics
+### 3.3 Summary Statistics
 
 The `skim()` function of the **skimr** package is also  helpful for getting a general sense of our data. By design, it provides summary statistics about the attributes in the dataset.
 
@@ -110,11 +112,11 @@ The function provides separate tables of summary statistics for each data type: 
 
 These participants are all adults ranging from a minimum age of 18 to a maximum of 60 years old, with a **mean age of 39 years old** which is considerably young. Since the participants need to use and navigate the city’s urban planning app for data collection, perhaps that is why we see only participants from this age range who are supposedly more tech savvy and accustomed to app usage. 
 
-# Visualizing with Charts
+# 4. Visualizing with Charts
 
 In this section, we use various charts to understand the demographic of these participants from the city of Engagement, Ohio USA.
 
-### Age
+### 4.1 Age
 
 A chart for the age distribution of these participants are prepared with the following changes to the `ggplot()`:
 
@@ -139,9 +141,9 @@ ggplot(data=demographic_data, aes(x = age)) +
           plot.subtitle = element_text(hjust = 0.5))
 
 ```
-We see that participants are quite well distributed across all the age groups with a dip in the late 30s range. 
+We see that participants are quite well distributed across all the age groups with lesser representative in the late 30s range. 
  
-### Household Size
+### 4.2 Household Size
 Next, we want to see the household size distribution of these participants.
 
 ```{r}
@@ -149,10 +151,9 @@ ggplot(data=demographic_data, aes(x = householdSize)) +
   geom_bar(color="black",fill="skyblue3") + 
   geom_text(stat="count",aes(label=paste0(..count..,", ",round(..count../sum(..count..)*100,1),"%")),vjust=-1) +
   ylim(0,400) +
-  xlab("Age") + 
+  xlab("Household Size") + 
   ylab("No. of Participants")+
-  ggtitle(label = 'Household Size Distribution',
-          subtitle = 'The household size ranges from 1 to 3.')+
+  ggtitle('Household Size Distribution')+
     theme(plot.title = element_text(size=14, face="bold",hjust = 0.5),
           plot.subtitle = element_text(hjust = 0.5))
 
@@ -165,13 +166,18 @@ Let's take a look at the age distribution within each househould sizes.
 ggplot(data=demographic_data, aes(x = age)) +
   geom_histogram(color="black",fill="skyblue3", bins=10) + 
   xlim(18,60)+
+  xlab("Age") + 
+  ylab("No. of Participants")+
+  ggtitle('Age Distribution within Each Household Size')+
+    theme(plot.title = element_text(size=14, face="bold",hjust = 0.5),
+          plot.subtitle = element_text(hjust = 0.5))+
   facet_grid(~ householdSize)
 
 ```  
-The singles (i.e. househould size = 1) are mostly in their late 40s, and we see mostly young families (late 20s to late 30s) within among the participants.
+The singles (i.e. househould size = 1) are mostly in their late 40s, and we see mostly young families (late 20s to early 30s) among the participants.
 
   
-### Education Level
+### 4.3 Education Level
 
 We will use `factor()` to specify the factor level order from lowest to the highest education level for a more intuitive interpretation of the chart. 
 
@@ -211,15 +217,17 @@ ggplot(data=demographic_data,aes(x=educationLevel, fill=AnyKids)) +
 ```
 When we stacked the bars side by side using `position = "dodge"` within each category, it is apparent that **parents of lower educational background do have more kids** (i.e. almost half of them have kids) compared to those of higher educational background where only about one-third of them have kids. 
 
-### Joviality
+### 4.4 Joviality
 
-Now, let us see what are the relationship of the joviality of the participants with the various attributes. We prepared four different charts to compare joviality with whether they have kids, their education level, age and interest group.
+Now, let us see what are the relationship of the joviality of the participants with the various attributes. We prepared four different charts to compare joviality with whether they have kids, their education level, age and interest group. We compare the charts together using the ~ library. 
 
 ```{r, fig.width=10,fig.height=10}
 library(patchwork)
 
 p1 <- ggplot(data=demographic_data,aes(x=AnyKids, y=joviality)) + 
   geom_boxplot(color="black",fill="skyblue3")+
+  xlab("Any Kids") + 
+  ylab("Joviality") +
   ggtitle('Kids & Joviality')+
   theme(plot.title = element_text(size=12, face="bold",hjust = 0.5),
           plot.subtitle = element_text(hjust = 0.5))
@@ -227,7 +235,8 @@ p1 <- ggplot(data=demographic_data,aes(x=AnyKids, y=joviality)) +
 p2 <- ggplot(data=demographic_data) + 
   geom_boxplot(aes(educationLevel, joviality), 
            color="black",fill="skyblue3") +
-  #theme(axis.text.x = element_text(angle = 45, vjust = 0.5, hjust=1))+
+  xlab("Education Level") + 
+  ylab("Joviality") +
   theme(plot.title = element_text(size=12, face="bold",hjust = 0.5),
           plot.subtitle = element_text(hjust = 0.5))+
   ggtitle('Education Level & Joviality')
@@ -235,6 +244,8 @@ p2 <- ggplot(data=demographic_data) +
 p3 <- ggplot(data=demographic_data) + 
   geom_boxplot(aes(interestGroup, joviality), 
            color="black",fill="skyblue3")+
+  xlab("Interest Group") + 
+  ylab("Joviality") +
   theme(plot.title = element_text(size=12, face="bold",hjust = 0.5),
           plot.subtitle = element_text(hjust = 0.5))+
   ggtitle('Interest Group & Joviality')
@@ -242,6 +253,8 @@ p3 <- ggplot(data=demographic_data) +
 p4 <- ggplot(data=demographic_data,
   aes(x=age, y=joviality)) +
   geom_point(stat = "summary", fun = "median") + 
+  xlab("Age") + 
+  ylab("Joviality") +
   theme(plot.title = element_text(size=12, face="bold",hjust = 0.5),
           plot.subtitle = element_text(hjust = 0.5))+
   ggtitle('Age & Joviality')
@@ -249,9 +262,9 @@ p4 <- ggplot(data=demographic_data,
 (p1 /p4) | (p2 / p3)
  
 ```
-In general, it seems that there are not much distinct difference in the degree of joviality across all attributes i.e. everyone is as cheerful as one another. A closer look, perhaps participants who have kids or hold a graduate degree or have interest "E" are typical more jovial than their peers.  
+In general, it seems that there are not much distinct difference in the degree of joviality across all attributes i.e. everyone is as cheerful as one another. A closer look, perhaps participants who have kids or hold a graduate degree or take part in interest group "E" are typical more jovial than their peers.  
 
-Hence, we created a trellis plot with educational level, interest group, kids to see which combination may gives a more jovial individuals. For an easier comparison, an arbitrary line of 0.8 (joviality) is inserted across all panels. 
+We proceed to create a trellis plot with educational level, kids, interest group to see which combination may gives a more jovial individual. For an easier comparison, an arbitrary line of 0.8 (joviality) is inserted across all panels. 
 
 ```{r, fig.width=8, fig.height=8}
 
@@ -259,14 +272,20 @@ ggplot(data=demographic_data) +
   geom_bar(aes(educationLevel, joviality,fill=AnyKids), 
            color="black", position = "dodge", stat = "summary", fun = "median")+
   geom_hline(yintercept=0.8, linetype="dashed", color = "red")+
+  xlab("Education Level") + 
+  ylab("Joviality") +
   theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))+
     coord_flip()+
+  ggtitle(label = 'Education Level, Kids, Interest Group Affects Joviality?',
+          subtitle = 'The participants are grouped according to education level, if they have kids and which interest group they joined.')+
+  theme(plot.title = element_text(size=14, face="bold",hjust = 0.5),
+          plot.subtitle = element_text(hjust = 0.5))+
   facet_wrap(AnyKids~interestGroup)
 
 ```
 We see that the most jovial participants may be the graduates with kids in interest group H, and those with bachelors degree with kids in interest Group I.
 
-# Concluding
+# 5. Concluding
 
 We have used some simple charts in attempt to illustrate the demographic of the city of Engagement, Ohio USA using the 7 attributes of the 1011 participants.
 
