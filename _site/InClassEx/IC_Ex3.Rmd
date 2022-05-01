@@ -1,0 +1,106 @@
+---
+title: "In Class Ex 03"
+description: |
+
+  we have just tried tableau, let's do a similar one on R!
+  
+author:
+  - name: XiaoQi
+    affiliation: School of Computing and Information Systems (SMU)
+date: "`r Sys.Date()`"
+output: distill::distill_article
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE,
+                      eval = TRUE,
+                      warning = FALSE,
+                      message = FALSE)
+```
+
+# Overview
+
+In this exercise.
+
+# Getting Started
+```{r echo=FALSE}
+packages = c('ggiraph', 'plotly', 
+             'DT', 'patchwork',
+             'gganimate', 'tidyverse',
+             'readxl', 'gifski', 'gapminder',
+             'treemap', 'treemapify',
+             'rPackedBar')
+
+for (p in packages){
+  if(!require(p, character.only = T)){
+    install.packages(p)
+  }
+  library(p,character.only = T)
+}
+```
+
+# Importing Data
+The code chuck below import *Exam_data.csv* from the data folder into R by using [`read_csv()`](www.test.com) of [**readr**](www.test1.com) package and save it as an tibble data frame called *GDP* and *WorldCountry*. 
+
+```{r}
+GDP <- read_csv("data/GDP.csv")
+WorldCountry <- read_csv("data/WorldCountry.csv")
+
+```
+
+# Data preparetion
+
+mutate() of dplyr package is used to convert all values in the 2020 field into numeric data type.usually used to compute. 
+select() of dplyr package is used to extract column 1 to 3 and Values field.
+pivot_wider() of tidyr package is used to split the values in Series Name field into columns.
+left_join() of dplyr package is used to perform a left-join by using Country Code of GDP_selected and ISO-alpha3 Code of WorldCountry tibble data tables as unique identifier.
+
+```{r}
+
+GDP_selected <- GDP %>%
+  mutate(Values = as.numeric(`2020`)) %>% #take note of the `2020` it is not '2020'  (the bracket)
+  select(1:3, Values) %>%
+  pivot_wider(names_from = `Series Name`,
+              values_from = `Values`) %>%
+  left_join(y=WorldCountry, by = c("Country Code" = "ISO-alpha3 Code"))
+```
+
+
+```{r}
+treemap(GDP_selected,
+        index=c("Continent", "Country Name"),
+        vSize="GDP (current US$)",
+        vColor="GDP per capita (current US$)",
+        type = "value",
+        algorithm = "squarified",
+        title="GDP (current US$) , 2020",
+        title.legend = "GDP per capita (current US$)"
+        )
+```
+
+```{r}
+library(devtools)
+install_github("timelyportfolio/d3treeR")
+```
+
+```{r}
+library(d3treeR)
+
+```
+
+```{r}
+tm <- treemap(GDP_selected,
+        index=c("Continent", "Country Name"),
+        vSize="GDP (current US$)",
+        vColor="GDP per capita (current US$)",
+        type = "value",
+        algorithm = "squarified",
+        title="GDP (current US$) , 2020",
+        title.legend = "GDP per capita (current US$)"
+        )
+```
+
+
+```{r}
+d3tree(tm, rootname = "World" )
+```

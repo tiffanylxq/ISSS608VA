@@ -1,0 +1,529 @@
+---
+title: "Take-Home Exercise 2"
+description: |
+
+  Take-Home Exercise 1 Take-2
+
+author:
+  - name: Lee Xiao Qi 
+    url: https://example.com/norajones
+    affiliation: School of Computing and Information Systems (SMU)
+    affiliation_url: https://example.com/spacelysprokets
+date: "`r Sys.Date()`"
+output: distill::distill_article
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE,
+                      eval = TRUE,
+                      warning = FALSE,
+                      message = FALSE)
+```
+
+# The Task
+
+In this take-home exercise, we are required to:
+
+1) select one of the [Take-home Exercise 1](https://isss608-ay2021-22april.netlify.app/th_ex/th_ex01) prepared by our classmate
+2) critic the submission in terms of clarity and aesthetics, and
+3) remake the original design by using the data visualisation principles and best practice we had learned in Lesson 1 and 2.
+
+# The Classmate's Take-Home Exercise 1
+
+I have selected Che Xuan's [submission](https://r4dsa4va.netlify.app/th_ex/th_ex1.html) for this exercise.  
+
+Following are the charts in the submission:
+
+1. Bar Chart on household size and education level 
+2. Trellis Boxplot for joviality distribution of the participants across interest groups by kids
+3. Raincoud Plots for joviality spread of the participants across the education levels 
+4. Ridge Plot for joviality spread of the participants across the interest groups  
+5. Composite Plot that patch s/n 1 to 4 into one canvas. 
+
+For simplicity, all codes from the original submission will not be showed in this webpage. You may refer to  Che Xuan's [webpage](https://r4dsa4va.netlify.app/th_ex/th_ex1.html) for more information. 
+
+# The Required Packages and Data 
+These packages **tidyverse** (including **dplyr**, **magrittr**, **ggplot2**, **patchwork**, **ggdist**, **tidyquant**), **ggrepel**,**ggdist**, **ggridges**, **patchwork**, **ggthemes** will be used for the purpose of this exercise. 
+
+The code chunk below is used to install and load the required packages onto RStudio. We will also import *Participants.csv* from the data folder into R by using `read_csv()` and save it as an tibble data frame called *demographic_data*. 
+
+```{r}
+packages = c('tidyverse','ggrepel','ggdist', 'ggridges', 'patchwork', 'ggthemes')
+
+for(p in packages){
+  if(!require(p, character.only =T)){
+    install.packages(p)
+    }
+  library(p, character.only =T)
+}
+```
+
+```{r}
+demographic_data <- read_csv("data/Participants.csv")
+```
+```{r}
+#check the data 
+library(dplyr)
+demographic_data %>%
+  glimpse()
+```
+# The Data Wrangling
+
+In my own submission for **Take-Home Exercise 1**, I have provided a brief description and conducted a series of data exploration and wrangling on the dataset. You may wish to visit this [page](https://tiffanylxq.netlify.app/takehomeex/th_ex1) for more information. 
+
+For the purpose of this exercise, I will retain the author's approach and will only make changes to his/her charts from a data visualisation point of view. 
+
+First, we start by renaming the columns and values of in *demographic_data* file using the function [`rename()`](https://dplyr.tidyverse.org/reference/rename.html), and [`sub()`](https://www.datasciencemadesimple.com/sub-gsub-function-in-r/) for a better format and ease of reading. 
+
+```{r}
+# rename columns
+demographic_data <- demographic_data %>%
+  rename('Participant_ID' = 'participantId', 
+         'Household_Size' = 'householdSize', 
+         'Have_Kids' = 'haveKids', 
+         'Age' = 'age', 
+         'Education_Level' = 'educationLevel', 
+         'Interest_Group' = 'interestGroup', 
+         'Joviality' = 'joviality')
+
+#rename row values
+demographic_data$Education_Level <- sub('HighSchoolOrCollege', 
+                                    'High School or College',
+                                    demographic_data$Education_Level)
+
+demographic_data$Have_Kids <- sub('TRUE', 
+                                    'Yes',
+                                    demographic_data$Have_Kids)
+
+demographic_data$Have_Kids <- sub('FALSE', 
+                                    'No',
+                                    demographic_data$Have_Kids)
+```
+
+# The Makeover
+
+Next, we look at each chart one by one. 
+
+### 1) Bar Chart on Household Size & Education level 
+
+**Clarity**:
+
+(+) It is helpful to include a plot title and rename the y and x-axis label for better understanding of the charts. The appended statistics also helps users to see the difference in size among the household sizes.
+
+(-) However, given that there are only 3 household sizes (1,2,3), there may not be a need to rearrange the bar in descending order. In this case. retaining the x-axis order may allow user to interpret quickly and intuitively what are the most and least common household size among the participants. A summary on the chart findings could also be helpful for the user. 
+
+**Aesthetics**:
+
+(+) Setting y-axis limit is helpful to see clearly the data label.  
+
+(-) Orientation of the y-axis label could be changed for ease of reading. 
+
+**Changes**:
+
+Other than addressing the (-) above, we also:
+
+1) uses the `theme()` function to lighten the background to enhance the dark grey bar charts, centralise the plot title and increase its font size
+
+2) uses the *axis* argument to change the y-axis label orientation, panel color, axis color
+
+3) the renamed data value of the educational level will serve to improve the readability of the x-axis
+
+4) included an annotation on the our observations
+
+5) customise the figure size to make it bigger 
+
+```{r,echo=FALSE}
+p1a <- ggplot(data = demographic_data,
+       aes(x=reorder(Household_Size, Household_Size, function(x)-length(x)))) +
+  geom_bar() +
+  ylim(0,550) +
+  geom_text(stat="count", 
+      aes(label=paste0(..count.., " (", 
+      round(..count../sum(..count..)*100,
+            1), "%)")),
+      vjust=-1) +
+  xlab("Household Size") +
+  ylab("No. of\nParticipants") +
+  ggtitle("Household Size of Participants")
+```
+
+```{r}
+p1b <- ggplot(data = demographic_data,
+       aes(x=Household_Size)) +
+  geom_bar() +
+  ylim(0,500) +
+  geom_text(stat="count", 
+      aes(label=paste0(..count.., " (", 
+      round(..count../sum(..count..)*100,
+            1), "%)")),
+      vjust=-1) +
+  ylab("No. of\nParticipants") +
+  ggtitle("Participants' Household Size")+
+  theme_minimal()+
+  theme(plot.title = element_text(size=14, face="bold",hjust = 0.5),
+          plot.subtitle = element_text(hjust = 0.5))+
+  theme(axis.title.y= element_text(angle=0), axis.ticks.x= element_blank(),
+        panel.background= element_blank(), axis.line= element_line(color= 'grey'))+
+  annotate("text", 
+           x = 2.5, 
+           y = 480, 
+           label = "Small Family Sizes of 1 to 3, \n with almost equal portion across the 3 groups",size=5,color='mediumvioletred')
+
+```
+
+
+```{r,echo=FALSE}
+library(patchwork)
+
+p1a + 
+  plot_annotation(tag_levels = list(c('Before')))+
+  theme(plot.tag = element_text(size=16,
+                                   color="blue",
+                                   face="bold"))
+```
+
+```{r, echo=FALSE, fig.width=8, fig.height=6}
+p1b + 
+  plot_annotation(tag_levels = list(c('After')))+
+  theme(plot.tag = element_text(size=16,
+                                   color="red",
+                                   face="bold"))
+```
+
+**The same observations are made for the bar chart on education level and hence similar changes are applied.**
+
+
+```{r,echo=FALSE}
+p2a <- ggplot(data = demographic_data,
+       aes(x=reorder(Education_Level, Education_Level, function(x)-length(x)))) +
+  geom_bar() +
+  ylim(0,550) +
+  geom_text(stat="count", 
+      aes(label=paste0(..count.., " (", 
+      round(..count../sum(..count..)*100,
+            1), "%)")),
+      vjust=-1) +
+  xlab("Education Level") +
+  ylab("No. of\nParticipants") +
+  ggtitle("Education Level of Participants")
+```
+
+
+```{r}
+demographic_data$Education_Level = factor(demographic_data$Education_Level, levels = c('Low', 'High School or College', 'Bachelors','Graduate'))
+
+p2b <- ggplot(data = demographic_data,
+       aes(x=Education_Level)) +
+  geom_bar() +
+  ylim(0,650) +
+  geom_text(stat="count", 
+      aes(label=paste0(..count.., " (", 
+      round(..count../sum(..count..)*100,
+            1), "%)")),
+      vjust=-1) +
+  ylab("No. of\nParticipants") +
+  ggtitle("Participants' Education Level")+
+  theme_minimal()+
+  theme(plot.title = element_text(size=14, face="bold",hjust = 0.5),
+          plot.subtitle = element_text(hjust = 0.5))+
+  theme(axis.title.y= element_text(angle=0), axis.ticks.x= element_blank(),
+        panel.background= element_blank(), axis.line= element_line(color= 'grey'))+
+  annotate("text", 
+           x = 3.2, 
+           y = 625, 
+           label = ">50% is a high school or college graduate,\n ~40% holds a min. bachelors degree.",size=5,color='mediumvioletred')
+```
+
+```{r,echo=FALSE}
+library(patchwork)
+
+p2a + 
+  plot_annotation(tag_levels = list(c('Before')))+
+  theme(plot.tag = element_text(size=16,
+                                   color="blue",
+                                   face="bold"))
+```
+```{r, echo=FALSE, fig.width=8, fig.height=6}
+p2b + 
+  plot_annotation(tag_levels = list(c('After')))+
+  theme(plot.tag = element_text(size=16,
+                                   color="red",
+                                   face="bold"))
+```
+### 2) Trellis Boxplot on Joviality across Interest Groups by Kids
+
+**Clarity**:
+
+(+) It is helpful to provide plot title for users to better understand the purpose of the chart, and mean value of joviality allow users to compare the changes among the interest groups.  
+
+(-) However, without drawing any observations, we are not able to ascertain the author's intention of the chart. Hence, we are unsure if the comparison of joviality are meant to be among different interest groups within participants with kids or no kids, or the comparison is within each interest group between participants with kids or no kids or both. There is also no legend to what "False" and "True" meant in the chart. 
+ 
+**Aesthetics**:
+
+(+) The plots are stacked (with and without kids) for easy comparison. 
+
+(-) Given that a box plot would give a median point, there may not be a need to include a mean value. The canvas could also be expanded to better appreciate the difference in the joviality level. 
+
+**Changes**:
+
+Other than addressing the (-) above, we also:
+
+1) adopted a bar chart `geom_bar()` with median jovaility and proper legend instead of a trellis boxplot to achieve the same purpose (*assuming the author's intent is to compare the average joviality of participants within each interest group between those with kids and those without kids*) but with greater clarity; 
+
+2) use the `geom_hline()` and `geom_text()` to insert an vertical line at 0.5 for ease of comparison 
+
+3) uses the *axis* argument to change the y-axis label orientation, panel color, axis color
+
+4) included an `annotation()` on the our observations
+
+5) customise the figure size to make it bigger 
+
+```{r}
+p3a <- ggplot(data=demographic_data, 
+       aes(y = Joviality, x= Interest_Group)) +
+  geom_boxplot() +
+  stat_summary(geom = "point",
+               fun.y="mean",
+               colour ="red",
+               size=3) +
+  facet_grid(Have_Kids ~.) +
+  ggtitle("Joviality across Interest Groups by Kids Status")
+```
+
+```{r, fig.width=10, fig.height=8}
+h_line <- 0.4  
+p3b <- ggplot(data=demographic_data) + 
+  geom_bar(aes(Interest_Group, Joviality,fill=Have_Kids), 
+           color="black", position = "dodge", stat = "summary", fun = "mean")+
+  ylim(0,0.70)+
+  geom_hline(aes(yintercept = h_line),linetype="dashed", color = "blue") +
+  geom_text(aes(0, h_line, label = h_line, vjust = - 1))+
+  theme(axis.text.x = element_text(angle = 0, vjust = 0.5, hjust=1))+
+    coord_flip()+
+  theme(axis.title.y= element_text(angle=0),
+        axis.line= element_line(color= 'grey'))+
+  ggtitle(label = 'Avg Joviality of Participants in Each Interest Group\n Between Those With and Without Kids')+
+  theme(plot.title = element_text(size=14, face="bold",hjust = 0.5),
+          plot.subtitle = element_text(hjust = 0.5))+
+  annotate("text", 
+           x = 9, 
+           y = 0.60, 
+           label = "Only Participants with kids\n in J, I, G, F, B are happier \n than those without kids.",size=4,color='mediumvioletred')
+```
+
+```{r,echo=FALSE}
+p3a + 
+  plot_annotation(tag_levels = list(c('Before')))+
+  theme(plot.tag = element_text(size=16,
+                                   color="blue",
+                                   face="bold"))
+```
+
+```{r, echo=FALSE, fig.width=10, fig.height=8}
+p3b + 
+  plot_annotation(tag_levels = list(c('After')))+
+  theme(plot.tag = element_text(size=16,
+                                   color="red",
+                                   face="bold"))
+```
+
+### 3) Raincloud Plots on Joviality across Educational Levels 
+
+**Clarity**:
+
+(+) It is helpful to provide definition of the data (*Joviality*) and plot title for users to better understand the purpose of the chart. 
+
+(-) However, without drawing any observations, we are not able to truly appreciate the author's purpose of the chart. We can only infer from purpose of [raincloud plot](https://towardsdatascience.com/making-it-rain-with-raincloud-plots-496c39a2756f) which is to visualize raw data, the distribution of the data, and key summary statistics at the same time.  
+
+**Aesthetics**:
+
+(+) The plots are stacked for easy comparison. 
+
+(-) The education level could be rearranged from lowest to highest level for easier readability and comparison.  
+
+**Changes**:
+
+Other than addressing the (-) above, the following changes were also made:
+
+1) swap the orientation by removing *coord_flip()* so that we can increase the figure size 
+2) *fill* argument to color differentiate among education level
+3) the rain and the cloud are plotted with some justification to place them next to each other and make room for the box plot.
+4) jittered points are included to enhance the data distribution  
+5) jitterred points are also placed on top of the box plot to reduce cluttering since we already have 4 groups (of education level)
+6) include a subtitle to record key observations of the chart 
+
+
+```{r, echo=FALSE}
+library(ggdist)
+```
+
+```{r,echo=FALSE}
+p4a <- ggplot(demographic_data, aes(x = Education_Level, y = Joviality)) +
+  scale_y_continuous(breaks = seq(0, 1, 0.2), 
+                     limits = c(0, 1)) + 
+  stat_halfeye(adjust = .33, 
+               width = .67, 
+               color = NA,
+               justification = -.01,
+               position = position_nudge(
+                 x = .15)
+  ) +
+  geom_boxplot(
+    width = .25,
+    outlier.shape = NA
+  ) +
+  coord_flip() +
+  ggtitle("Joviality Spread by Education Level")
+
+```
+
+```{r,fig.width=14,fig.height=12}
+
+p4b <- ggplot(demographic_data, aes(x = Education_Level, y = Joviality, fill=Education_Level)) + 
+  ggdist::stat_halfeye(
+    adjust = .5, 
+    width = .6, 
+    .width = 0, 
+    justification = -.3, 
+    point_colour = NA) + 
+  geom_boxplot(
+    width = .25, 
+    outlier.shape = NA
+  ) +
+  geom_point(
+    size = 1.3,
+    alpha = .3,
+    position = position_jitter(
+      seed = 1, width = .1
+    )
+  ) + 
+  coord_cartesian(xlim = c(1.2, NA), clip = "off")+
+  ggtitle(label = "Joviality Distribution for Different Education Level",
+          subtitle = "Jovality are quite well spread within each education level,\n with higher educated particpants being happier.")+
+  theme_minimal()+
+  theme(plot.title = element_text(size=14, face="bold",hjust = 0.5),
+          plot.subtitle = element_text(size=12,hjust = 0.5,color='mediumvioletred'))+
+  theme(axis.title.y= element_text(angle=0), axis.ticks.x= element_blank(),
+        panel.background= element_blank(), axis.line= element_line(color= 'grey'))
+
+```
+
+```{r,echo=FALSE}
+p4a + 
+  plot_annotation(tag_levels = list(c('Before')))+
+  theme(plot.tag = element_text(size=16,
+                                   color="blue",
+                                   face="bold"))
+```
+
+```{r, echo=FALSE, fig.width=10, fig.height=8}
+p4b + 
+  plot_annotation(tag_levels = list(c('After')))+
+  theme(plot.tag = element_text(size=16,
+                                   color="red",
+                                   face="bold"))
+```
+### 4) Ridge Plots on Joviality across Interest Groups
+
+**Clarity**:
+
+(+) It is helpful to include plot title for users to better understand the purpose of the chart. 
+
+(-) [Ridgeline plots](https://cran.r-project.org/web/packages/ggridges/vignettes/introduction.html#:~:text=Ridgeline%20plots%20are%20partially%20overlapping,distributions%20over%20time%20or%20space.) are usually meant for visualizing changes in distributions over time or space, which is not the case for this dataset. Without providing any further explanation or summary of the chart we are not able to truly appreciate the author's purpose of the chart. 
+
+ 
+**Aesthetics**:
+
+(+) The plots are clean. 
+
+(-) The plots does not highlight any key information to communication the author's intent.  
+
+**Changes**:
+
+We suppose that the author would like to see the distribution of joviality across interest groups, as such we continue to use Raincloud plot instead of a Ridge plot. Other than addressing the above (-), the following changes were also made:
+
+1) change the orientation using *coord_flip()* so that it is visiually easier to compare the median of different interest groups 
+2) *fill* argument to color differentiate among different interest group 
+3) the box plot are removed to reduce cluttering given that we have 10 interest groups. 
+4) include a subtitle to record key observations of the chart 
+
+```{r, echo=FALSE}
+
+p5a <- ggplot(demographic_data, 
+       aes(x = Joviality, y = Interest_Group)) + 
+  geom_density_ridges(rel_min_height = 0.01,
+                      scale = 1) +
+  ggtitle("Joviality Spread by Interest Group")
+```
+
+```{r,fig.width=10, fig.height=10}
+p5b <- ggplot(demographic_data, aes(x = Interest_Group, y = Joviality, fill=Interest_Group)) + 
+  stat_halfeye(adjust = .35,
+               width = .6,
+               color = 'black',
+               justification = -.15,
+               position = position_nudge(x = .12)) +
+  geom_hline(aes(yintercept = 0.5),
+             linetype= 'dashed',
+             color= 'blue',
+             size= .6) +
+  coord_flip() +
+  ggtitle(label = "Joviality Distribution for Different Interest Groups",
+          subtitle = "Jovality are quite well spread within each interest group,\n interest group E has the highest median joviality index while interest group H has the lowest.")+
+  theme_minimal()+
+  theme(plot.title = element_text(size=14, face="bold",hjust = 0.5),
+          plot.subtitle = element_text(size=12,hjust = 0.5,color='mediumvioletred'))+
+  theme(axis.title.y= element_text(angle=0), axis.ticks.x= element_blank(),
+        panel.background= element_blank(), axis.line= element_line(color= 'grey'))
+
+```
+
+
+```{r,echo=FALSE}
+p5a + 
+  plot_annotation(tag_levels = list(c('Before')))+
+  theme(plot.tag = element_text(size=16,
+                                   color="blue",
+                                   face="bold"))
+```
+
+```{r, echo=FALSE, fig.width=10, fig.height=10}
+p5b + 
+  plot_annotation(tag_levels = list(c('After')))+
+  theme(plot.tag = element_text(size=16,
+                                   color="red",
+                                   face="bold"))
+```
+### 5) Composite Plots of the above
+
+**Clarity**:
+
+(+) It is helpful to provide an overview with an overall title of all the plots discussed thus far. The plots are also well labelled for clarity. 
+
+
+(-) An overall summary would be most helpful to conclude the discussion. 
+
+ 
+**Aesthetics**:
+
+(+) The plots are well sized and colored coordinated. The panel background is also changed to enhance visualisation. 
+
+(-) The plots did not highlight any key information to call on users' attention.   
+
+**Changes**:
+
+Other than the changes already made to the individual charts, we also include an overall summary as the plot title. 
+ 
+
+```{r,fig.width=16, fig.height=30}
+patchwork <- ((p1b / p2b)| p3b)/(p4b | p5b) + 
+              plot_annotation(tag_levels = 'I', 
+              title = 'The participants are from small family (<3) and most of them are high school or collegue graduate.
+              \nAll of them take part in an interest group and those without kids have higher mean joviality.
+              \nAmong the participants, those of higher education level or take part in interest group E also seems to have higher median joviality.\n', caption='Demographic of the City of Engagement, Ohio USA')
+patchwork & theme_economist()
+```
+
+## The End
+
+With this, we conclude this exercise where we have make various changes to the 5 sections of charts in attempt to make them clearer and aesthetically easier for interpretation. 
