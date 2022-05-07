@@ -1,0 +1,289 @@
+---
+title: "Take-Home Exercise 3"
+description: |
+
+  Putting Visual Analytics into Practical Use
+
+author:
+  - name: Lee Xiao Qi 
+    url: https://example.com/norajones
+    affiliation: School of Computing and Information Systems (SMU)
+    affiliation_url: https://example.com/spacelysprokets
+date: "`r Sys.Date()`"
+output: distill::distill_article
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE,
+                      eval = TRUE,
+                      warning = FALSE,
+                      message = FALSE)
+```
+
+# 1. The Task
+
+We are required to attempt one of the three questions under Challenge 3 of [VAST Challenge 2022](https://vast-challenge.github.io/2022/) on the economic of the city of Engagement, Ohio USA by using appropriate static and interactive statistical graphics methods.
+
+With that, I have chosen #3 which is to:
+
+**Describe the health of the various employers within the city limits. What employment patterns do you observe? Do you notice any areas of particularly high or low turnover? Limit your response to 10 images and 500 words.**
+
+# 2. The Datasets
+
+### 2.1 About the Data
+
+About 1000 representative residents have volunteered to provide data using the city’s urban planning app, which records the places they visit, their spending, and their purchases, among other things; totaling to 3 dataset folders (**Activity Logs, Attributes, Journals**). For this exercise, we refers to Empolyers that offers jobs as stipulated in the **Jobs** dataset; we thus selected the dataset **Employers**, **Buildings**, **Jobs** from the **Attributes** folder, and **CheckinJournal** from the **Journals** folder which give details on the employers and jobs.  
+
+### 2.2 Importing the relevant packages and data
+
+The packages **tidyverse** (including **dplyr**, **ggplot2**, **patchwork**), **ggrepel**, **lubridate**, **gapminder**, **gganimate** will be used for the purpose of this exercise:
+
+The code chunk below is used to install and load the required packages onto RStudio.
+
+```{r}
+packages = c('tidyverse','treemap','ggrepel','lubridate','gapminder','gganimate')
+
+for(p in packages){
+  if(!require(p, character.only =T)){
+    install.packages(p)
+    }
+  library(p, character.only =T)
+}
+```
+
+The code chuck below import *Employers.csv*, *Buildings.csv*, *Jobs.csv* and *CheckinJournal.csv* from the data folder into R by using `read_csv()` and save it as an tibble data frame.  
+
+```{r}
+Employers <- read_csv("data/Employers.csv")
+Buildings <- read_csv("data/Buildings.csv")
+Jobs <- read_csv("data/Jobs.csv")
+Checkin <- read_csv("data/CheckinJournal.csv")
+
+```
+
+
+polygon(x = c(0.7, 1.3, 1.2, 0.8),                           # X-Coordinates of polygon
+        y = c(0.6, 0.8, 1.4, 1),                             # Y-Coordinates of polygon
+        col = "#1b98e0") 
+        
+### 2.3 Data Exploration and Wrangling
+
+First, let’s get a general sense of our data using the function `summary()`.
+
+```{r}
+summary(Employers)
+summary(Buildings)
+summary(Jobs)
+summary(Checkin)
+
+```
+#### 2.3.1 Joining of Datasets
+
+*Employers* dataset is joined with *Buildings* dataset based on `buildingId` to filter only relevant information from *Buildings* dataset in regards to employers. Left join on *Employers* is used as commercial buildings are a subset of the different type of buildings.  
+
+```{r}
+Employers <- Employers %>% left_join(Buildings,by="buildingId")
+
+# to confirm tables are joined correctly
+head(Employers)
+```
+
+Next, we use outer join on *Employers* and *Jobs* based on `employerId` to have a full overview on all the jobs that are offered by each employer.   
+
+```{r}
+Employers = merge(x=Employers,y=Jobs,by="employerId",all=TRUE)
+# to confirm tables are joined correctly
+head(Employers)
+```
+
+#### 2.3.2 Renaming of Columns and Values
+
+First, we start by renaming the columns and values of in *Employers* and *Checkin* dataset using the function [`rename()`](https://dplyr.tidyverse.org/reference/rename.html), and [`sub()`](https://www.datasciencemadesimple.com/sub-gsub-function-in-r/) for a better format and ease of reading.
+
+Note: A check between both datasets shows that `venueId` in *Checkin* dataset refers to the `employerId`, `pubId` etc. For the purpose of this exercise, we are only interested in the `employerId` (`venueType` = `Workspace`) and other venues type will be removed subsequently.
+
+```{r}
+# rename columns
+Employers <- Employers %>%
+  rename('Employer_ID' = 'employerId', 
+         'Location(Pt)' = 'location.x', 
+         'Location(Area)' = 'location.y',
+         'Building_ID' = 'buildingId', 
+         'Building_Type' = 'buildingType', 
+         'Max_Occupancy' = 'maxOccupancy', 
+         'Units' = 'units', 
+         'Job_ID' = 'jobId',
+         'Hourly_Rate' = 'hourlyRate',
+         'Start_Time' = 'startTime',
+         'End_Time' = 'endTime',
+         'Days_To_Work' = 'daysToWork',
+         'Education_Requirement' = 'educationRequirement')
+
+Buildings <- Buildings %>%
+  rename('Building_Type' = 'buildingType', 
+         'Building_ID' = 'buildingId')
+
+Checkin <- Checkin %>%
+  rename('Participant_ID' = 'participantId', 
+         'Timestamp' = 'timestamp', 
+         'Employer_ID' = 'venueId',
+         'Venue_Type' = 'venueType')
+
+#rename row values
+Employers$Education_Requirement <- sub('HighSchoolOrCollege', 
+                                    'High School or College',
+                                    Employers$Education_Requirement)
+
+#confirm changes
+head(Employers)
+head(Checkin)
+```
+
+#### 2.3.3 Compute frequency count of returns by sub-category
+
+We are using *Checkin* to see the changes in employment (i.e. checkin by participants at workplace) over time. We see that the `venueId` column in the dataset are IDs of all possible venues such as work place, restaurants and pubs. 
+
+Given that we are only interested in workplace, we will first co the frequency get the subset of row that reads "workplace" using `grep()`. the this column as `buildingId` and left join with *Employers*.   
+
+Compute frequency count of returns by sub-category
+Then, the frequency count of returns by sub-category is computed by using the group_by method found in dplyr.
+
+GROUP_BY METHOD
+```{r}
+#Extract the date from timestamp
+Checkin$Date <- as.Date(Checkin$Timestamp)
+
+#Fliter rows with workplace as value
+Workplace_Checkin <- Checkin[grep("Workplace", Checkin$Venue_Type),]
+
+#Compute count frequency of participants by date in each venue
+Count_Checkin <- Workplace_Checkin %>%
+  group_by(Date, Employer_ID) %>%
+  summarise('Num_of_Employees'= n_distinct(Participant_ID))  
+
+
+head(Count_Checkin)
+```
+### 2.4 RDS Format 
+
+Dataframe *Employers*, *Checkin*, *Count_Checkin* are saved and read in RDS format to avoid uploading large files to Git.
+
+```{r}
+
+saveRDS(Employers, 'data/Employers.rds')
+Employers <- readRDS('data/Employers.rds')
+head(Employers)
+
+saveRDS(Workplace_Checkin, 'data/Workplace_Checkin.rds')
+Workplace_Checkin <- readRDS('data/Workplace_Checkin.rds')
+head(Workplace_Checkin)
+
+saveRDS(Count_Checkin, 'data/Count_Checkin.rds')
+Count_Checkin <- readRDS('data/Count_Checkin.rds')
+head(Count_Checkin)
+
+```
+# 3. Visualizing with Charts
+
+Next, we put up a series of charts to address the question.
+
+### 1) How Big are these Companies?
+
+
+```{r}
+
+#wages of each job
+#A <- as.POSIXct(Start_Time)
+#B<- as.POSIXct(End_Time)
+
+#Employers <- Employers %>%
+ # difftime(B,A, units = "hours")
+
+Employers %>% mutate(duration = End_Time - Start_Time)
+Employers%>%duration = Employers%>%duration /60
+ 
+```
+
+
+```{r}
+
+```
+
+
+```{r}
+
+```
+
+
+```{r}
+ggplot(Count_Checkin, aes(x = Date, y = Num_of_Employees, 
+                      size = Num_of_Employees, 
+                      colour = Employer_ID)) +
+  geom_bar()
+  scale_colour_manual(values = country_colors) +
+  scale_size(range = c(2, 12)) +
+  labs(title = 'Year: {frame_time}', 
+       x = '% Aged', 
+       y = '% Young') +
+  transition_time(Year) +
+  ease_aes('linear')
+```
+
+```{r}
+ggplot(Workplace_Checkin, aes(Employer_ID, Participant_ID, fill = Employer_ID)) +
+  geom_bar() 
+
+
+```
+
+```{r}
+treemap(Count_Checkin,
+        index=c("Employer_ID"),
+        vSize="Num_of_Employees",
+        vColor="Num_of_Employees",
+        type = "value")
+```
+
+```{r}
+staticplot = ggplot(Count_Checkin, aes(Num_of_Employees, group = Employer_ID, 
+                fill = as.factor(Employer_ID), color = as.factor(Employer_ID))) +
+  geom_tile(aes(y = value/2,
+                height = value,
+                width = 0.9), alpha = 0.8, color = NA) +
+  geom_text(aes(y = 0, label = paste(country_name, " ")), vjust = 0.2, hjust = 1) +
+  geom_text(aes(y=value,label = Value_lbl, hjust=0)) +
+  coord_flip(clip = "off", expand = FALSE) +
+  scale_y_continuous(labels = scales::comma) +
+  scale_x_reverse() +
+  guides(color = FALSE, fill = FALSE) +
+  theme(axis.line=element_blank(),
+        axis.text.x=element_blank(),
+        axis.text.y=element_blank(),
+        axis.ticks=element_blank(),
+        axis.title.x=element_blank(),
+         axis.title.y=element_blank(),
+        legend.position="none",
+        panel.background=element_blank(),
+        panel.border=element_blank(),
+        panel.grid.major=element_blank(),
+        panel.grid.minor=element_blank(),
+        panel.grid.major.x = element_line( size=.1, color="grey" ),
+        panel.grid.minor.x = element_line( size=.1, color="grey" ),
+        plot.title=element_text(size=25, hjust=0.5, face="bold", colour="grey", vjust=-1),
+        plot.subtitle=element_text(size=18, hjust=0.5, face="italic", color="grey"),
+        plot.caption =element_text(size=8, hjust=0.5, face="italic", color="grey"),
+        plot.background=element_blank(),
+       plot.margin = margin(2,2, 2, 4, "cm"))
+
+staticplot
+```
+
+```{r}
+ggplot(Employers, aes(x = Employer_ID)) +
+  geom_point()
+
+```
+
+```{r}
+
+```
