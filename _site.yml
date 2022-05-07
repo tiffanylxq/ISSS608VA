@@ -5,6 +5,10 @@ description: |
 output_dir: "_site"
 navbar:
   left:
+    - text: "In-Class Exercise"
+      menu: 
+      - text: "In Class Exercise 4"
+        href: "InClassEx/IC_Ex4.html"
     - text: "Take-Home Exercise"
       menu: 
       - text: "Take-Home Exercise 1"
