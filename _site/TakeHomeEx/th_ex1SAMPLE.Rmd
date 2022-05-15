@@ -1,27 +1,6 @@
----
-title: "Take-Home Exercise 1"
-description: |
-  First try out in TH.
-author:
-  - name: Lee Xiao Qi 
-    url: https://example.com/norajones
-    affiliation: School of Computing and Information Systems (SMU)
-    affiliation_url: https://example.com/spacelysprokets
-date: "`r Sys.Date()`"
-output: distill::distill_article
----
 
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
-```
-
-# Overview
-
-In this exercise.
-
-# Getting Started
 ```{r}
-packages = c('tidyverse')
+packages = c('tidyverse','treemap','ggrepel','lubridate','gapminder','gganimate','ggiraph','plotly')
 
 for(p in packages){
   if(!require(p, character.only =T)){
@@ -31,22 +10,29 @@ for(p in packages){
 }
 ```
 
-# Importing Data
-The code chuck below import *Exam_data.csv* from the data folder into R by using [`read_csv()`](www.test.com) of [**readr**](www.test1.com) package and save it as an tibble data frame called *exam_data*. 
-
-```{r}
-exam_data <- read_csv("data/Exam_data.csv")
-```
-
-# A Simple Bar Chart 
-The code chuck below uses create a bar chart by using geom_bar of ggplot2.
-
 ```{r}
 
-ggplot(data=exam_data, 
-    aes(x= RACE)) +
-  geom_bar()
+
+FJ <- read_csv("data/FinancialJournal.csv")
+
+```
+
+```{r}
+#Extract the date from timestamp
+FJ$Date <- as.Date(FJ$timestamp)
+
+#Fliter rows with workplace as value
+FJ <- FJ[grep("Wage", FJ$category),]
+
+
 ```
 
 
+
+```{r}
+
+
+write.csv(FJ,"D:/VAST-Challenge-2022/Datasets/FJ.csv", row.names = FALSE)
+
+```
 
