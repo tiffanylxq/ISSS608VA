@@ -1,0 +1,212 @@
+---
+title: "In Class Ex 06"
+description: |
+
+author:
+  - name: XiaoQi
+    affiliation: School of Computing and Information Systems (SMU)
+date: "`r Sys.Date()`"
+output: distill::distill_article
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE,
+                      eval = TRUE,
+                      warning = FALSE,
+                      message = FALSE,
+                      fig.retina = 3) #default is 1
+```
+# Getting Started
+
+## Setting up R packages
+
+To start with, need necessary packages are launched using `library()`.
+
+```{r}
+packages = c('tidyverse', 'tmap', 'sf',
+             'lubridate','clock',
+             'sftime','rmarkdown')
+
+for (p in packages){
+  if(!require(p, character.only = T)){
+    install.packages(p)
+  }
+  library(p,character.only = T)
+}
+```
+
+## Importing Data
+
+We are using the data from the [VAST Challenge 2022](https://vast-challenge.github.io/2022/); in particular, the `School.csv` , `Pubs.csv` , `Apartments.csv` , `Employer.csv` , `Buildings.csv` and `Restaurants.csv` from the **Attributes** folder.
+
+```{r}
+schools <- read_sf("data/wkt/Schools.csv", 
+                   options = "GEOM_POSSIBLE_NAMES=location")
+
+pubs <- read_sf("data/wkt/Pubs.csv", 
+                   options = "GEOM_POSSIBLE_NAMES=location")
+
+apartments <- read_sf("data/wkt/Apartments.csv", 
+                   options = "GEOM_POSSIBLE_NAMES=location")
+
+buildings <- read_sf("data/wkt/Buildings.csv", 
+                   options = "GEOM_POSSIBLE_NAMES=location")
+
+employers <- read_sf("data/wkt/Employers.csv", 
+                   options = "GEOM_POSSIBLE_NAMES=location")
+
+restaurants <- read_sf("data/wkt/Restaurants.csv", 
+                   options = "GEOM_POSSIBLE_NAMES=location")
+
+```
+
+## Examining the data
+
+If we try to plot the data `Schpols`, we see that each column is treated as a venue and hence the coordinates are repeated across the 4 variables. 
+
+```{r}
+ plot(schools)
+
+```
+
+**print()** can be used to review the data object.
+
+```{r}
+#the coord are converted to geospatial data denoted by the "c" before the points in the dataframe; and "points/polygon" in the tibble table.
+print(schools)
+print(buildings)
+
+##crs = coordinate reference system; not revealed by the ogranizer in our case
+```
+
+# Geospatial Data
+
+Buildings
+
+```{r}
+tmap_mode("view") #on interactive
+tm_shape(buildings)+
+tm_polygons(col = "grey60",
+           size = 1,
+           border.col = "black",
+           border.lwd = 1)
+tmap_mode("plot") #off interactive
+```
+
+Buildings + Employers, the sequence matters! Points layered on top of polygon
+
+```{r}
+tmap_mode("plot")
+tm_shape(buildings)+
+tm_polygons(col = "grey60",
+           size = 1,
+           border.col = "black",
+           border.lwd = 1) +
+tm_shape(employers) +
+  tm_dots(col = "red")
+```
+
+# Movement Data
+
+```{r, eval=FALSE}
+logs <- read_sf("data/wkt/ParticipantStatusLogs1.csv", 
+                options = "GEOM_POSSIBLE_NAMES=currentLocation")
+```
+
+```{r,eval=FALSE}
+glimpse(logs)
+
+#sf cannot understand timestamp hence it is converted to chr.
+
+```
+
+## Processing movement data
+
+```{r,eval=FALSE}
+logs_selected <- logs %>%
+  mutate(Timestamp = date_time_parse(timestamp, 
+                                     zone = "",
+                                     format = "%Y-%m-%dT%H:%M:%S")) %>%
+  mutate(day = get_day(Timestamp)) %>%
+  filter(currentMode == "Transport")
+```
+
+Dataframe`logs_selected` is saved and read in RDS format to avoid uploading large file to Git.
+
+```{r,eval=FALSE}
+ write_rds(logs_selected, "data/rds/logs_selected.rds")
+
+```
+
+We will load back the `logs_selected.rds` file and work on this file henceforth.
+
+```{r}
+ logs_selected <- read_rds("data/rds/logs_selected.rds")
+
+```
+
+## Static movement data
+
+
+```{r}
+tmap_mode("plot")
+tm_shape(buildings)+
+tm_polygons(col = "grey60",
+           size = 1,
+           border.col = "black",
+           border.lwd = 1) +
+tm_shape(logs_selected) +
+  tm_dots(col = "red") 
+
+```
+
+## Events Points
+
+To count how much activities going on within the hexagons, we first create the hexagons.
+
+```{r}
+ 
+hex <- st_make_grid(buildings, 
+                    cellsize=100, 
+                    square=FALSE) %>%
+  st_sf() %>%
+  rowid_to_column('hex_id')
+plot(hex)
+```
+find the event points (i.e. `logs_selected` data) within the hexagon grid, hence the obs is the same as the logs_selected. then we count how many event points happens within the hexagon. 
+
+```{r}
+points_in_hex <- st_join(logs_selected, 
+                         hex, 
+                         join=st_within) %>%
+  st_set_geometry(NULL) %>% #geometric layer is removed hence we can fill in the count in the next step
+  count(name='pointCount', hex_id)
+head(points_in_hex)
+```
+
+```{r}
+hex_combined <- hex %>%
+  left_join(points_in_hex, 
+            by = 'hex_id') %>%
+  replace(is.na(.), 0)
+```
+
+```{r}
+tm_shape(hex_combined %>%
+           filter(pointCount > 0))+ #filter away those 0 event hexagon
+  tm_fill("pointCount",
+          n = 8,
+          style = "quantile") +
+  tm_borders(alpha = 0.1)
+```
+## Movement path from event points
+
+```{r}
+logs_path <- logs_selected %>%
+  group_by(participantId, day) %>%
+  summarize(m = mean(Timestamp), 
+            do_union=FALSE) %>%
+  st_cast("LINESTRING") #will combine all datapoint that belongs to the same person on the same date
+```
+
+

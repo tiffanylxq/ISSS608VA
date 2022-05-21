@@ -6,7 +6,7 @@ description: |
   
   Feel free to reach out to me at xiaoqilee.2020@mitb.smu.edu.sg should you have any feedback or need any clarification.
   
-  Enjoy & Stay Safe!
+  Enjoy & Stay Safe!!
   
 site: distill::distill_website
 ---
