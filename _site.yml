@@ -9,6 +9,8 @@ navbar:
       menu: 
       - text: "In Class Exercise 4"
         href: "InClassEx/IC_Ex4.html"
+      - text: "In Class Exercise 6"
+        href: "InClassEx/IC_Ex6.html"
     - text: "Take-Home Exercise"
       menu: 
       - text: "Take-Home Exercise 1"
