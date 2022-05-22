@@ -1,0 +1,256 @@
+---
+title: "Take-Home Exercise 4"
+description: |
+
+  Putting Visual Analytics into Practical Use
+
+author:
+  - name: Lee Xiao Qi 
+    url: https://example.com/norajones
+    affiliation: School of Computing and Information Systems (SMU)
+    affiliation_url: https://example.com/spacelysprokets
+date: "`r Sys.Date()`"
+output: distill::distill_article
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE,
+                      eval = TRUE,
+                      warning = FALSE,
+                      message = FALSE)
+```
+
+# 1. The Task
+
+We are required to attempt bullet point 3 of Challenge 2 of [VAST Challenge 2022](https://vast-challenge.github.io/2022/) which is:
+
+**"Participants have given permission to have their daily routines captured. Choose two different participants with different routines and describe their daily patterns, with supporting evidence. Limit your response to 10 images and 500 words."**
+
+We are to use ViSIElse and other appropriate visual analytics methods to reveal the daily routines of two selected participant of the city of Engagement, Ohio USA. 
+
+# 2. The Preparation
+
+### 2.1 About the Data
+
+About 1000 representative residents have volunteered to provide data using the city’s urban planning app, which records the places they visit, their spending, and their purchases, among other things; in particular, the **Activity Logs** dataset recorded the status of each participant in 5-minute increments over the duration of
+the 15-month data collection period.
+
+For this exercise, we have selected **ID 180** & **1000**.
+
+### 2.2 Importing the relevant packages and data
+
+The following packages within the code chunk below is install and load onto RStudio.
+
+```{r}
+packages = c('lubridate','tidyverse', 'data.table', 'ViSiElse')
+
+for (p in packages){
+  if(!require(p, character.only = T)){
+    install.packages(p)
+  }
+  library(p,character.only = T)
+}
+```
+
+The code chuck below imports and merge the entire 15 month logs files from the **Activity Log** data folder into R by using `list.files()`. Due to memory space, we will split the uploading and cleaning into 2 times.
+
+```{r,eval=FALSE}
+logs_fread <- list.files(path = "./data/ActivityLogs/1/",
+                  pattern = "*.csv", 
+                  full.names = T) %>% 
+  map_df(~fread(.))
+
+```
+
+After merging the activity logs for all participants, we filtered out Participant ID 180 and 1000 using `grep()`.
+
+```{r,eval=FALSE}
+P180a <- logs_fread[grep("180", logs_fread$participantId),]
+P1000a <- logs_fread[grep("1000", logs_fread$participantId),]
+
+```
+### 2.3 Data Structure 
+
+This section we carried out a series of code chucks to prepare the data for `visielse()`.
+
+First, we combined the `currentMode` and `sleepStatus` column to differentiate the different modes that the participants are when they are at home; and also compute total duration (in mins) for each activity.
+
+```{r,eval=FALSE}
+
+#Add a new column "AM_PM" which Identify if the activity took place in morning or afternoon.
+P180b <-
+  mutate(P180a, AM_PM =
+        (format(P180a$timestamp, "%p")))
+P1000b <-
+  mutate(P1000a, AM_PM =
+        (format(P1000a$timestamp, "%p")))
+
+#Add a new column "Date" that show the date of each activity
+P180b <-
+  mutate(P180b, Date =
+        (as.Date(P180b$timestamp)))
+P1000b <-
+  mutate(P1000b, Date =
+        (as.Date(P1000b$timestamp)))
+
+#Add a new column "Time", which represents the 5 minutes duration for each row.
+P180b <-
+  mutate(P180b, Time=as.numeric(5))
+P1000b <-
+  mutate(P1000b, Time=as.numeric(5))
+
+#Add a new column called "Activity" 
+P180b$Activity <- paste(P180b$currentMode, P180b$sleepStatus,P180b$Activity, P180b$AM_PM, sep="_")
+P1000b$Activity <- paste(P1000b$currentMode, P1000b$sleepStatus,P1000b$Activity, P1000b$AM_PM, sep="_")
+```
+
+We retained only 3 columns - namely `Date`, `Time` and `Activity` for the purpose of this exercise. 
+
+```{r,eval=FALSE}
+P180_filtered <- P180b[, -c(1:13)]
+P1000_filtered <- P1000b[, -c(1:13)]
+ 
+```
+
+Dataframe *P180* and *P1000* are saved and read in csv format.
+
+```{r,eval=FALSE}
+ write_csv(P180_filtered, "data/csv/P180_filtered.csv")
+ write_csv(P1000_filtered, "data/csv/P1000_filtered.csv")
+
+```
+
+We will repeat the above for second set of the files.
+
+```{r,eval=FALSE,include=FALSE}
+logs_fread <- list.files(path = "./data/ActivityLogs/2/",
+                  pattern = "*.csv", 
+                  full.names = T) %>% 
+  map_df(~fread(.))
+
+```
+
+```{r,eval=FALSE,include=FALSE}
+P180a <- logs_fread[grep("180", logs_fread$participantId),]
+P1000a <- logs_fread[grep("1000", logs_fread$participantId),]
+
+```
+
+```{r,eval=FALSE,include=FALSE}
+P180b <-
+  mutate(P180a, AM_PM =
+        (format(P180a$timestamp, "%p")))
+P1000b <-
+  mutate(P1000a, AM_PM =
+        (format(P1000a$timestamp, "%p")))
+P180b <-
+  mutate(P180b, Date =
+        (as.Date(P180b$timestamp)))
+P1000b <-
+  mutate(P1000b, Date =
+        (as.Date(P1000b$timestamp)))
+
+P180b <-
+  mutate(P180b, Time=as.numeric(5))
+
+P1000b <-
+  mutate(P1000b, Time=as.numeric(5))
+
+P180b$Activity <- paste(P180b$currentMode, P180b$sleepStatus,P180b$Activity, P180b$AM_PM, sep="_")
+P1000b$Activity <- paste(P1000b$currentMode, P1000b$sleepStatus,P1000b$Activity, P1000b$AM_PM, sep="_")
+
+```
+
+```{r,eval=FALSE,include=FALSE}
+P180_filtered_2 <- P180b[, -c(1:13)]
+P1000_filtered_2 <- P1000b[, -c(1:13)]
+ 
+```
+
+```{r,eval=FALSE,include=FALSE}
+ write_csv(P180_filtered_2, "data/csv/P180_filtered_2.csv")
+ write_csv(P1000_filtered_2, "data/csv/P1000_filtered_2.csv")
+
+```
+
+### 2.4 Loading back the cleaned files
+
+Once completed, we will load back the `P180_filtered.csv` and `P1000_filtered.csv` files and work on these files henceforth.
+
+```{r}
+logs_P180 <- list.files(path = "./data/csv/P180/",
+                  pattern = "*.csv", 
+                  full.names = T) %>% 
+  map_df(~fread(.))
+
+logs_P1000 <- list.files(path = "./data/csv/P1000/",
+                  pattern = "*.csv", 
+                  full.names = T) %>% 
+  map_df(~fread(.))
+
+```
+
+We transpose the `Activity` to columns using `pivot_wider()`. 
+
+```{r}
+P180 <- logs_P180 %>%
+  pivot_wider(names_from = Activity, values_from = Time, values_fill = 0, values_fn = sum)
+
+
+P1000 <- logs_P1000 %>%
+  pivot_wider(names_from = Activity, values_from = Time, values_fill = 0, values_fn = sum)
+```
+
+We want to get the cumulative time across each activity. 
+
+```{r}
+P180<- t(apply(P180[, (2:16)], 1, cumsum))
+P180<-as.data.frame(P180)
+
+P1000 <- t(apply(P1000[, (2:16)], 1, cumsum))
+P1000<-as.data.frame(P1000)
+
+```
+
+# 3. The Routine 
+
+Finally, we use `visielse()` to visualise the daily routine of the 2 participants across the 15 months period.
+
+```{r, results='hide'}
+visielse(P180, informer = NULL)
+visielse(P1000, informer = NULL)
+
+```
+
+# 4. The Observations 
+
+Comparing both plots, we see quite a different routine between both participants 180 and 1000. 
+
+1. **Regularity.** P180 clearly has a more routine habits where we see that his/her various activities took place mostly at the same interval and for similar amount of time through the months. The schedule of P1000 on the other hand is less routine, stretching across various time period. The only regularity observed in P1000 is that he/she has a habit of taking a nap right after recreation and eating. 
+
+2. **Work Hours.** P180 has longer and regular work hours; spending almost same amount of time before and after lunch. However, P1000 has flexible work hours and also shorter than that of P180. 
+
+3. **Recreation.** Both spent time on recreation but we see that P180 spent lesser hours and usually earlier in the day, while P1000 spent more time on recreation and usually later in the day. 
+
+4. **Sleeping Habits.** We see that P180 prepare to sleep at night and sleep before midnight while P1000 usually prepare and go to sleep pass midnight. 
+
+# 5. The Possible Explanations 
+
+Let's import their demographic data to understand what might have contributed to the differences. We used the code chuck below import *Participants.csv* from the data folder into R by using `read_csv()` and save it as an tibble data frame called *demographic_data* and filtered out the information of both participants.
+
+```{r}
+demographic_data <- read_csv("data/Participants.csv")
+P180_info <- glimpse(demographic_data[grep("180", demographic_data$participantId),])
+P1000_info <- glimpse(demographic_data[grep("1000", demographic_data$participantId),])
+```
+
+We see that both are at the opposite spectrum of joviality where P180 is very unhappy (0.100) and P1000 being very happy (0.983). Their routines could possibly explained the difference in joviality which is closely lined to their demographic information.
+
+P180, though single and younger at age 34, and has low education level. He thus seems to have a more routine life resolving mostly around work to earn a living and has lesser time for leisure. While P1000 though also single but older at 56, has a graduate degree, possibly enjoying his nearing retirement life comfortably and hence flexible lifestyle. 
+
+# 6. The Future Works
+
+To have a more insights, we can also look at their income and spending habits to support our results above. We can also look at their routines between weekday and weekend to gain further insights. 
+
+
+

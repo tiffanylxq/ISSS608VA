@@ -35,7 +35,7 @@ We are to use ViSIElse and other appropriate visual analytics methods to reveal 
 About 1000 representative residents have volunteered to provide data using the city’s urban planning app, which records the places they visit, their spending, and their purchases, among other things; in particular, the **Activity Logs** dataset recorded the status of each participant in 5-minute increments over the duration of
 the 15-month data collection period.
 
-For this exercise, we have selected ID xx & Xx and only look at 3 different dates (16 May 2022, 20 May 2022, 21 May 2022) of the 15 month period to see their daily routine on a Monday, Friday and Saturday.
+For this exercise, we have selected **ID 180** & **1000** and only look at 3 different dates **(18 July 2022, 22 July 2022, 23 July 2022)** of the 15 month period to see their daily routine on a Monday, Friday and Saturday.
 
 ### 2.2 Importing the relevant packages and data
 
@@ -46,7 +46,7 @@ packages = c('scales', 'viridis',
              'lubridate', 'ggthemes', 
              'gridExtra', 'tidyverse', 
              'readxl', 'knitr',
-             'data.table', 'ViSiElse')
+             'data.table', 'ViSiElse','matrixStats')
 for (p in packages){
   if(!require(p, character.only = T)){
     install.packages(p)
@@ -55,7 +55,7 @@ for (p in packages){
 }
 ```
 
-The code chuck below import *Employers.csv*, *Buildings.csv*, *Jobs.csv* and *CheckinJournal.csv* from the data folder into R by using `read_csv()` and save it as an tibble data frame.  
+The code chuck below imports multiple files (`ParticipantStatusLogs23.csv` & `ParticipantStatusLogs24.csv`) from the **Activity Log** data folder into R by using `list.files()`.
 
 ```{r}
 logs_fread <- list.files(path = "./data/ActivityLogs/",
@@ -88,37 +88,50 @@ P180b <-
   mutate(P180b, Time=as.numeric(5))
 
 P180b$Activity <- paste(P180b$currentMode, P180b$sleepStatus,P180b$Activity, P180b$AM_PM, sep="_")
-```
-
-```{r}
-
-P180f<- P180b %>%
-  filter(date=="16.05.2022"| date=="20.05.2022"| date=="21.05.2022")
-
 
 ```
 
-```{r}
 
-P180c <- P180b[, -c(1:13)]
+```{r}
+P180_filtered <- P180b[, -c(1:13)]
+P180_filtered <-  filter(P180_filtered, Date == "2022-07-18" | Date == "2022-07-22"|Date == "2022-07-23")
 
 ```
 
-```{r}
 
-P180e <- P180c %>%
+### 2.4 RDS Format 
+
+Dataframe *P180* and *P1000* are saved and read in RDS format to avoid uploading large files to Git.
+
+```{r,eval=FALSE}
+ write_rds(P180_filtered, "data/rds/P180_filtered")
+
+```
+
+We will load back the `P180_filtered.rds` file and work on these file henceforth.
+
+```{r}
+P180_filtered <- read_rds("data/rds/P180_filtered")
+
+```
+
+
+```{r}
+P180a <- P180_filtered %>%
   pivot_wider(names_from = Activity, values_from = Time, values_fill = 0, values_fn = sum)
-
-
 ```
 
 ```{r}
-visielse(P180e)
+P180a<- t(apply(P180a[, (2:9)], 1, cumsum))
+P180b<-as.data.frame(P180a)
+P180c <-  as.integer(P180b[1,1:8])
+
 ```
 
-```{r}
-P180d<- t(apply(P180c, 2, cumsum))
 
+
+```{r}
+visielse(P180b, informer = NULL)
 ```
 
 ```{r}
@@ -141,22 +154,6 @@ P180d <- P180c %>% spread(key = Activity, value = Duration)
 P180 <- logs_fread[grep("180", logs_fread$participantId),]
 
 P1000 <- logs_fread[grep("1000", logs_fread$participantId),]
-
-```
-
-### 2.4 RDS Format 
-
-Dataframe *P180* and *P1000* are saved and read in RDS format to avoid uploading large files to Git.
-
-```{r}
-
-saveRDS(P180, 'data/ActivityLogs/P180')
-P180 <- readRDS('data/ActivityLogs/P180')
-head(P180)
-
-saveRDS(P1000, 'data/ActivityLogs/P1000')
-P1000 <- readRDS('data/ActivityLogs/P1000')
-head(P1000)
 
 ```
 

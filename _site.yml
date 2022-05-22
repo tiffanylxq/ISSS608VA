@@ -19,6 +19,8 @@ navbar:
         href: "TakeHomeEx/th_ex2.html"
       - text: "Take-Home Exercise 3"
         href: "TakeHomeEx/th_ex3_Final.html"
+      - text: "Take-Home Exercise 4"
+        href: "TakeHomeEx/th_ex4_Final.html"
     - text: "DataVis Makeover"
       menu:
       - text: "DataVis Makeover 1"
